@@ -1,0 +1,101 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use File::Spec::Functions qw(splitdir rel2abs curdir catdir);
+use Getopt::Long;
+use Env qw(HOME);
+use lib "$HOME/lib";
+use TVShow;
+
+my $dir_name;
+my $serie_name;
+my $sub_dir = 1;
+my $nb_episodes;
+my $season;
+my $dry_run = 0;
+my $in_place = 0;
+my $use_season = 1;
+my $recurse = 0;
+my $verbose = 0;
+my $keep_going = 1;
+my $check_duplicate = 1;
+
+GetOptions (
+	'directory|folder=s'	=>	\$dir_name ,
+	'recursive!'			=>	\$recurse,
+	'name=s'				=>	\$serie_name,
+	'make-sub-directory!'	=>	\$sub_dir,
+	'episodes=i'			=>	\$nb_episodes,
+	'season=i'				=>	\$season,
+	'dry-run!'				=>	\$dry_run,
+	'in-place!'				=>	\$in_place,
+	'use-seasons!'			=>	\$use_season,
+	'verbose!'				=>	\$verbose,
+	'keep-going!'			=>	\$keep_going,
+	'check-duplicates!'		=>	\$check_duplicate,
+);
+
+
+die( "I need a folder!" ) if not $dir_name;
+
+
+my %options = (
+	dir			=> $sub_dir,
+);
+$options{'season'} = $season if $season;
+$options{'pattern'} = $TVShow::season_pattern if $use_season;
+$options{'nb_episodes'} = $nb_episodes if $nb_episodes;
+
+
+
+my @name_splited = splitdir($dir_name);
+$serie_name = $name_splited[-1]?$name_splited[-1]:$name_splited[-2] if not $serie_name;
+
+
+my $current_dir = rel2abs( curdir() );
+
+
+my $find_mode = $recurse?\&TVShow::recurse_find:\&TVShow::non_recurse_find;
+
+
+my %fill_post_hash = ();
+
+
+$find_mode->(
+	sub{
+		my $file_path	= shift;
+		my $file_name	= shift;
+		my $file_dir	= shift;
+
+		TVShow::apply_on_file(
+			$file_path,
+			$file_name,
+			$serie_name ,
+			catdir( $current_dir , $in_place?$file_dir:$dir_name ) ,
+			\%options	,
+			sub { TVShow::add_other_rename( \%fill_post_hash, shift, shift, shift); }
+		);
+	}  ,
+	$dir_name );
+
+
+
+if( $check_duplicate )
+{
+	TVShow::check_unique( \%fill_post_hash ) &&
+	TVShow::process_action(
+	   	\%fill_post_hash ,
+	   	$keep_going ,
+	   	$verbose ,
+	   	$dry_run ,
+		\&TVShow::change ) ||
+   	( $! = 81 && die "Ambiguous targets..." );
+}else
+{
+	TVShow::process_action(
+		\%fill_post_hash ,
+		$keep_going ,
+		$verbose ,
+		$dry_run ,
+		\&TVShow::change );
+}
