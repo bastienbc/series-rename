@@ -3,8 +3,6 @@ use strict;
 use warnings;
 use File::Spec::Functions qw(splitdir rel2abs curdir catdir);
 use Getopt::Long;
-use Env qw(HOME);
-use lib "$HOME/lib";
 use TVShow;
 
 my $dir_name;

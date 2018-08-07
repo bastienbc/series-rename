@@ -1,4 +1,4 @@
-package TVShow;
+package TVShow 1.0;
 use strict;
 use warnings;
 use File::Copy "mv";
@@ -94,7 +94,7 @@ sub add_other_rename {
 	my $dir = shift;
 	if( $dict->{"$dest"} )
 	{
-		push( $dict->{"$dest"}{'sources'} , $source );
+		push( @{$dict->{"$dest"}{'sources'}} , $source );
 	}else
 	{
 		my @sources = ( "$source" );

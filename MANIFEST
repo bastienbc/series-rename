@@ -1,0 +1,4 @@
+bin/series-rename
+Build.PL
+lib/TVShow.pm
+MANIFEST			This list of files
